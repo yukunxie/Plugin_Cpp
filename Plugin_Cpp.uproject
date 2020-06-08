@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{C318E4CA-FE40-C135-56E3-3AAE8B2F3143}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "Plugin_Cpp",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
