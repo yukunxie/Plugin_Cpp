@@ -1,12 +1,10 @@
 # Visual Studio 2015 user specific files
 .vs/**/*
 .vscode/**/*
-DerivedData/**/*
 
+DerivedData/**/*
 Plugin_Cpp.xcworkspace/**/*
 Plugin_Cpp.code-workspace
-
-
 *.pyc
 
 # Compiled Object files
