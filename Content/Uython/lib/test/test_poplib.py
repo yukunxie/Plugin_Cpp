@@ -15,7 +15,6 @@ from unittest import TestCase, skipUnless
 from test import support as test_support
 from test.support import hashlib_helper
 from test.support import socket_helper
-from test.support import threading_helper
 
 HOST = socket_helper.HOST
 PORT = 0
@@ -537,11 +536,11 @@ class TestTimeouts(TestCase):
 def test_main():
     tests = [TestPOP3Class, TestTimeouts,
              TestPOP3_SSLClass, TestPOP3_TLSClass]
-    thread_info = threading_helper.threading_setup()
+    thread_info = test_support.threading_setup()
     try:
         test_support.run_unittest(*tests)
     finally:
-        threading_helper.threading_cleanup(*thread_info)
+        test_support.threading_cleanup(*thread_info)
 
 
 if __name__ == '__main__':

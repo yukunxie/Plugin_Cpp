@@ -10,7 +10,6 @@ import hashlib
 
 from test import support
 from test.support import hashlib_helper
-from test.support import threading_helper
 
 try:
     import ssl
@@ -667,11 +666,11 @@ def setUpModule():
     # Store the threading_setup in a key and ensure that it is cleaned up
     # in the tearDown
     global threads_key
-    threads_key = threading_helper.threading_setup()
+    threads_key = support.threading_setup()
 
 def tearDownModule():
     if threads_key:
-        threading_helper.threading_cleanup(*threads_key)
+        support.threading_cleanup(*threads_key)
 
 if __name__ == "__main__":
     unittest.main()

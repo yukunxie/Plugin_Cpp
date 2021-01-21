@@ -82,12 +82,21 @@ void UythonContext::Initialize()
     
     // 全局模块需要在Py_Initialize之前调用
     RegisterGlobalPythonMethod();
-    
-    Py_Initialize();
+
+    Py_SetPath(L"E:\\Realxie\\Uython\\Plugins\\Uython\\Source\\ThirdParty\\Python3\\Binaries\\Win64");
+
+    PyConfig config;
+    PyConfig_InitPythonConfig(&config);
+    //config.filesystem_encoding = L"utf-8";
+    PyConfig_SetString(&config, &(config.filesystem_encoding), L"utf-8");
+    PyConfig_SetString(&config, &(config.filesystem_errors), L"surrogatepass");
+
+    PyStatus status = Py_InitializeFromConfig(&config);
     
     // 输出重定向
     {
-        const char* redirectCode = "import sys\n"
+        const char* redirectCode = "# -*- coding: utf-8 -*-\n"
+        "import sys\n"
         "import Uython\n"
         "\n"
         "class Logger(object):\n"
@@ -117,8 +126,9 @@ void UythonContext::Initialize()
         char buffer[2048];
         snprintf(buffer, sizeof(buffer) - 1, redirectCode, TCHAR_TO_UTF8(*scriptFullPath));
                  
-        PyRun_SimpleString(buffer);
-        PyRun_SimpleString("print('********* test python stdout redirect to UE4', flush=True)");
+        
+        int cod1code = PyRun_SimpleString("print('********* test python stdout redirect to UE4', flush=True)");
+        int code = PyRun_SimpleString(buffer);
     }
     
     // 加载main.py

@@ -5,7 +5,6 @@ import unittest
 import unittest.mock
 from test import support
 from test.support import socket_helper
-from test.support import threading_helper
 import socket
 import select
 import time
@@ -3832,6 +3831,7 @@ class ThreadedTests(unittest.TestCase):
 
     @requires_minimum_version
     @requires_tls_version('TLSv1_2')
+    @requires_tls_version('TLSv1')
     def test_min_max_version_mismatch(self):
         client_context, server_context, hostname = testing_context()
         # client 1.0, server 1.2 (mismatch)
@@ -4430,7 +4430,7 @@ class TestPostHandshakeAuth(unittest.TestCase):
 
         # Ignore expected SSLError in ConnectionHandler of ThreadedEchoServer
         # (it is only raised sometimes on Windows)
-        with threading_helper.catch_threading_exception() as cm:
+        with support.catch_threading_exception() as cm:
             server = ThreadedEchoServer(context=server_context, chatty=False)
             with server:
                 with client_context.wrap_socket(socket.socket(),
@@ -4751,11 +4751,11 @@ def test_main(verbose=False):
     if support.is_resource_enabled('network'):
         tests.append(NetworkedTests)
 
-    thread_info = threading_helper.threading_setup()
+    thread_info = support.threading_setup()
     try:
         support.run_unittest(*tests)
     finally:
-        threading_helper.threading_cleanup(*thread_info)
+        support.threading_cleanup(*thread_info)
 
 if __name__ == "__main__":
     test_main()

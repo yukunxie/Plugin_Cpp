@@ -68,6 +68,7 @@ extern void _PyFloat_Fini(void);
 extern void _PySlice_Fini(void);
 extern void _PyAsyncGen_Fini(void);
 
+extern int _PySignal_Init(int install_signal_handlers);
 extern void PyOS_FiniInterrupts(void);
 
 extern void _PyExc_Fini(void);
@@ -82,6 +83,7 @@ extern void _PyFaulthandler_Fini(void);
 extern void _PyHash_Fini(void);
 extern void _PyTraceMalloc_Fini(void);
 extern void _PyWarnings_Fini(PyInterpreterState *interp);
+extern void _PyAST_Fini(void);
 
 extern PyStatus _PyGILState_Init(PyThreadState *tstate);
 extern void _PyGILState_Fini(PyThreadState *tstate);

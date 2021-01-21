@@ -373,7 +373,9 @@ class ProcessTestCase(BaseTestCase):
         # matches *expected_cwd*.
         p = subprocess.Popen([python_arg, "-c",
                               "import os, sys; "
-                              "sys.stdout.write(os.getcwd()); "
+                              "buf = sys.stdout.buffer; "
+                              "buf.write(os.getcwd().encode()); "
+                              "buf.flush(); "
                               "sys.exit(47)"],
                               stdout=subprocess.PIPE,
                               **kwargs)
@@ -382,7 +384,7 @@ class ProcessTestCase(BaseTestCase):
         self.assertEqual(47, p.returncode)
         normcase = os.path.normcase
         self.assertEqual(normcase(expected_cwd),
-                         normcase(p.stdout.read().decode("utf-8")))
+                         normcase(p.stdout.read().decode()))
 
     def test_cwd(self):
         # Check that cwd changes the cwd for the child process.
@@ -1824,6 +1826,10 @@ class POSIXProcessTestCase(BaseTestCase):
         with self.assertRaises(ValueError):
             subprocess.check_call(ZERO_RETURN_CMD, user=-1)
 
+        with self.assertRaises(OverflowError):
+            subprocess.check_call(ZERO_RETURN_CMD,
+                                  cwd=os.curdir, env=os.environ, user=2**64)
+
         if pwd is None and name_uid is not None:
             with self.assertRaises(ValueError):
                 subprocess.check_call(ZERO_RETURN_CMD, user=name_uid)
@@ -1866,6 +1872,10 @@ class POSIXProcessTestCase(BaseTestCase):
         # make sure we bomb on negative values
         with self.assertRaises(ValueError):
             subprocess.check_call(ZERO_RETURN_CMD, group=-1)
+
+        with self.assertRaises(OverflowError):
+            subprocess.check_call(ZERO_RETURN_CMD,
+                                  cwd=os.curdir, env=os.environ, group=2**64)
 
         if grp is None:
             with self.assertRaises(ValueError):
@@ -1914,6 +1924,11 @@ class POSIXProcessTestCase(BaseTestCase):
         # make sure we bomb on negative values
         with self.assertRaises(ValueError):
             subprocess.check_call(ZERO_RETURN_CMD, extra_groups=[-1])
+
+        with self.assertRaises(ValueError):
+            subprocess.check_call(ZERO_RETURN_CMD,
+                                  cwd=os.curdir, env=os.environ,
+                                  extra_groups=[2**64])
 
         if grp is None:
             with self.assertRaises(ValueError):
@@ -3144,6 +3159,19 @@ class POSIXProcessTestCase(BaseTestCase):
         # Don't check the returncode value: the test reads the exit status,
         # so Popen failed to read it and uses a default returncode instead.
         self.assertIsNotNone(proc.returncode)
+
+    def test_send_signal_race2(self):
+        # bpo-40550: the process might exist between the returncode check and
+        # the kill operation
+        p = subprocess.Popen([sys.executable, '-c', 'exit(1)'])
+
+        # wait for process to exit
+        while not p.returncode:
+            p.poll()
+
+        with mock.patch.object(p, 'poll', new=lambda: None):
+            p.returncode = None
+            p.send_signal(signal.SIGTERM)
 
     def test_communicate_repeated_call_after_stdout_close(self):
         proc = subprocess.Popen([sys.executable, '-c',

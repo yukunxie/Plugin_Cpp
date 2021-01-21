@@ -16,11 +16,19 @@ public class Python3 : ModuleRules
 
             if (Target.Platform == UnrealTargetPlatform.Win64)
             {
-                // PythonDynLibName = "Python.dll";
-                // PythonDynamicLibPath = Path.Combine(ModuleDirectory, "binaries/Win64", PythonDynLibName);
+                PythonDynLibName = "python39.dll";
+                PythonDynamicLibPath = Path.Combine(ModuleDirectory, "Binaries/Win64", PythonDynLibName);
 
-                // string Format = Path.Combine(ModuleDirectory, "{0}/Win64/Python.lib");
-                // PublicAdditionalLibraries.Add(String.Format(Format, Target.bBuildEditor == true ? "binaries" : "lib"));
+                //PublicDefinitions.Add("MS_WINDOWS=1");
+                //PublicDefinitions.Add("_WIN64=1");
+                //PublicDefinitions.Add("MS_WIN64=1");
+                //PublicDefinitions.Add("NT_THREADS=1");
+
+                {
+                    string Format = Path.Combine(ModuleDirectory, "{0}/Win64/python39.lib");
+                    PublicAdditionalLibraries.Add(String.Format(Format, Target.bBuildEditor == true ? "Binaries" : "Lib"));
+                }
+
             }
             else if (Target.Platform == UnrealTargetPlatform.Mac)
             {
@@ -47,7 +55,7 @@ public class Python3 : ModuleRules
 
             if (Target.bBuildEditor == true)
             {
-                PublicDelayLoadDLLs.Add(PythonDynLibName);
+                //PublicDelayLoadDLLs.Add(PythonDynLibName);
                 RuntimeDependencies.Add(PythonDynamicLibPath);
             }
 

@@ -33,7 +33,6 @@ from asyncio import selector_events
 from test.test_asyncio import utils as test_utils
 from test import support
 from test.support import socket_helper
-from test.support import threading_helper
 from test.support import ALWAYS_EQ, LARGEST, SMALLEST
 
 
@@ -294,11 +293,8 @@ class EventLoopTestsMixin:
             self.loop.stop()
 
         self.loop.call_later(0.1, callback, 'hello world')
-        t0 = time.monotonic()
         self.loop.run_forever()
-        t1 = time.monotonic()
         self.assertEqual(results, ['hello world'])
-        self.assertTrue(0.08 <= t1-t0 <= 0.8, t1-t0)
 
     def test_call_soon(self):
         results = []
@@ -707,7 +703,7 @@ class EventLoopTestsMixin:
         proto.transport.close()
         lsock.close()
 
-        threading_helper.join_thread(thread)
+        support.join_thread(thread)
         self.assertFalse(thread.is_alive())
         self.assertEqual(proto.state, 'CLOSED')
         self.assertEqual(proto.nbytes, len(message))
@@ -1076,6 +1072,7 @@ class EventLoopTestsMixin:
                                                ssl=sslcontext_client,
                                                server_hostname='localhost')
         client, pr = self.loop.run_until_complete(f_c)
+        self.loop.run_until_complete(proto.connected)
 
         # close connection
         proto.transport.close()
@@ -1101,6 +1098,7 @@ class EventLoopTestsMixin:
                                           ssl=sslcontext_client,
                                           server_hostname='localhost')
         client, pr = self.loop.run_until_complete(f_c)
+        self.loop.run_until_complete(proto.connected)
 
         # extra info is available
         self.check_ssl_extra_info(client, peername=(host, port),
@@ -2673,10 +2671,10 @@ class GetEventLoopTestsMixin:
     if sys.platform != 'win32':
 
         def test_get_event_loop_new_process(self):
-            # Issue bpo-32126: The multiprocessing module used by
+            # bpo-32126: The multiprocessing module used by
             # ProcessPoolExecutor is not functional when the
             # multiprocessing.synchronize module cannot be imported.
-            support.import_module('multiprocessing.synchronize')
+            support.skip_if_broken_multiprocessing_synchronize()
 
             async def main():
                 pool = concurrent.futures.ProcessPoolExecutor()

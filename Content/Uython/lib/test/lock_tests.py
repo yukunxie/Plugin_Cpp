@@ -11,7 +11,6 @@ import unittest
 import weakref
 
 from test import support
-from test.support import threading_helper
 
 
 requires_fork = unittest.skipUnless(hasattr(os, 'fork'),
@@ -38,7 +37,7 @@ class Bunch(object):
         self.started = []
         self.finished = []
         self._can_exit = not wait_before_exit
-        self.wait_thread = threading_helper.wait_threads_exit()
+        self.wait_thread = support.wait_threads_exit()
         self.wait_thread.__enter__()
 
         def task():
@@ -74,10 +73,10 @@ class Bunch(object):
 
 class BaseTestCase(unittest.TestCase):
     def setUp(self):
-        self._threads = threading_helper.threading_setup()
+        self._threads = support.threading_setup()
 
     def tearDown(self):
-        threading_helper.threading_cleanup(*self._threads)
+        support.threading_cleanup(*self._threads)
         support.reap_children()
 
     def assertTimeout(self, actual, expected):
@@ -240,7 +239,7 @@ class LockTests(BaseLockTests):
             lock.acquire()
             phase.append(None)
 
-        with threading_helper.wait_threads_exit():
+        with support.wait_threads_exit():
             start_new_thread(f, ())
             while len(phase) == 0:
                 _wait()

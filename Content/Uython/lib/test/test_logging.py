@@ -43,7 +43,6 @@ import tempfile
 from test.support.script_helper import assert_python_ok, assert_python_failure
 from test import support
 from test.support import socket_helper
-from test.support import threading_helper
 from test.support.logging_helper import TestHandler
 import textwrap
 import threading
@@ -80,7 +79,7 @@ class BaseTest(unittest.TestCase):
     def setUp(self):
         """Setup the default logging stream to an internal StringIO instance,
         so that we can examine log output as we want."""
-        self._threading_key = threading_helper.threading_setup()
+        self._threading_key = support.threading_setup()
 
         logger_dict = logging.getLogger().manager.loggerDict
         logging._acquireLock()
@@ -151,7 +150,7 @@ class BaseTest(unittest.TestCase):
             logging._releaseLock()
 
         self.doCleanups()
-        threading_helper.threading_cleanup(*self._threading_key)
+        support.threading_cleanup(*self._threading_key)
 
     def assert_log_lines(self, expected_values, stream=None, pat=None):
         """Match the collected log lines against the regular expression
@@ -866,7 +865,7 @@ class TestSMTPServer(smtpd.SMTPServer):
         Wait for the server thread to terminate.
         """
         self.close()
-        threading_helper.join_thread(self._thread)
+        support.join_thread(self._thread)
         self._thread = None
         asyncore.close_all(map=self._map, ignore_all=True)
 
@@ -916,7 +915,7 @@ class ControlMixin(object):
         """
         self.shutdown()
         if self._thread is not None:
-            threading_helper.join_thread(self._thread)
+            support.join_thread(self._thread)
             self._thread = None
         self.server_close()
         self.ready.clear()
@@ -1157,6 +1156,32 @@ class MemoryHandlerTest(BaseTest):
         self.mem_hdlr.close()
         # assert that no new lines have been added
         self.assert_log_lines(lines)  # no change
+
+    def test_race_between_set_target_and_flush(self):
+        class MockRaceConditionHandler:
+            def __init__(self, mem_hdlr):
+                self.mem_hdlr = mem_hdlr
+                self.threads = []
+
+            def removeTarget(self):
+                self.mem_hdlr.setTarget(None)
+
+            def handle(self, msg):
+                thread = threading.Thread(target=self.removeTarget)
+                self.threads.append(thread)
+                thread.start()
+
+        target = MockRaceConditionHandler(self.mem_hdlr)
+        try:
+            self.mem_hdlr.setTarget(target)
+
+            for _ in range(10):
+                time.sleep(0.005)
+                self.mem_logger.info("not flushed")
+                self.mem_logger.warning("flushed")
+        finally:
+            for thread in target.threads:
+                support.join_thread(thread)
 
 
 class ExceptionFormatter(logging.Formatter):
@@ -3213,7 +3238,7 @@ class ConfigDictTest(BaseTest):
         finally:
             t.ready.wait(2.0)
             logging.config.stopListening()
-            threading_helper.join_thread(t)
+            support.join_thread(t)
 
     def test_listen_config_10_ok(self):
         with support.captured_stdout() as output:
@@ -3630,9 +3655,9 @@ if hasattr(logging.handlers, 'QueueListener'):
 
         @patch.object(logging.handlers.QueueListener, 'handle')
         def test_handle_called_with_mp_queue(self, mock_handle):
-            # Issue 28668: The multiprocessing (mp) module is not functional
+            # bpo-28668: The multiprocessing (mp) module is not functional
             # when the mp.synchronize module cannot be imported.
-            support.import_module('multiprocessing.synchronize')
+            support.skip_if_broken_multiprocessing_synchronize()
             for i in range(self.repeat):
                 log_queue = multiprocessing.Queue()
                 self.setup_and_log(log_queue, '%s_%s' % (self.id(), i))
@@ -3656,9 +3681,9 @@ if hasattr(logging.handlers, 'QueueListener'):
             indicates that messages were not registered on the queue until
             _after_ the QueueListener stopped.
             """
-            # Issue 28668: The multiprocessing (mp) module is not functional
+            # bpo-28668: The multiprocessing (mp) module is not functional
             # when the mp.synchronize module cannot be imported.
-            support.import_module('multiprocessing.synchronize')
+            support.skip_if_broken_multiprocessing_synchronize()
             for i in range(self.repeat):
                 queue = multiprocessing.Queue()
                 self.setup_and_log(queue, '%s_%s' %(self.id(), i))

@@ -16,7 +16,6 @@ import io
 import contextlib
 from test import support
 from test.support import socket_helper
-from test.support import threading_helper
 from test.support import ALWAYS_EQ, LARGEST, SMALLEST
 
 try:
@@ -1465,7 +1464,7 @@ class UseBuiltinTypesTestCase(unittest.TestCase):
         self.assertTrue(server.use_builtin_types)
 
 
-@threading_helper.reap_threads
+@support.reap_threads
 def test_main():
     support.run_unittest(XMLRPCTestCase, HelperTestCase, DateTimeTestCase,
             BinaryTestCase, FaultTestCase, UseBuiltinTypesTestCase,

@@ -7,7 +7,6 @@ import threading
 import weakref
 
 from test import support
-from test.support import threading_helper
 from test import lock_tests
 
 
@@ -139,7 +138,7 @@ class LifetimeTests:
  ) = test_util.test_both(LifetimeTests, init=init)
 
 
-@threading_helper.reap_threads
+@support.reap_threads
 def test_main():
     support.run_unittest(Frozen_ModuleLockAsRLockTests,
                          Source_ModuleLockAsRLockTests,

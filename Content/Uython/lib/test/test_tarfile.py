@@ -429,6 +429,13 @@ class CommonReadTest(ReadTest):
                 with self.assertRaisesRegex(tarfile.ReadError, "unexpected end of data"):
                     tar.extractfile(t).read()
 
+    def test_length_zero_header(self):
+        # bpo-39017 (CVE-2019-20907): reading a zero-length header should fail
+        # with an exception
+        with self.assertRaisesRegex(tarfile.ReadError, "file could not be opened successfully"):
+            with tarfile.open(support.findfile('recursion.tar')) as tar:
+                pass
+
 class MiscReadTestBase(CommonReadTest):
     def requires_name_attribute(self):
         pass
@@ -1339,10 +1346,10 @@ class WriteTest(WriteTestBase, unittest.TestCase):
                 f.write('something\n')
             os.symlink(source_file, target_file)
             with tarfile.open(temparchive, 'w') as tar:
-                tar.add(source_file)
-                tar.add(target_file)
+                tar.add(source_file, arcname="source")
+                tar.add(target_file, arcname="symlink")
             # Let's extract it to the location which contains the symlink
-            with tarfile.open(temparchive) as tar:
+            with tarfile.open(temparchive, errorlevel=2) as tar:
                 # this should not raise OSError: [Errno 17] File exists
                 try:
                     tar.extractall(path=tempdir)
@@ -1409,11 +1416,14 @@ class WriteTest(WriteTestBase, unittest.TestCase):
                                    pax_headers={'non': 'empty'})
             self.assertFalse(f.closed)
 
+
 class GzipWriteTest(GzipTest, WriteTest):
     pass
 
+
 class Bz2WriteTest(Bz2Test, WriteTest):
     pass
+
 
 class LzmaWriteTest(LzmaTest, WriteTest):
     pass
@@ -1457,8 +1467,17 @@ class StreamWriteTest(WriteTestBase, unittest.TestCase):
         finally:
             os.umask(original_umask)
 
+
 class GzipStreamWriteTest(GzipTest, StreamWriteTest):
-    pass
+    def test_source_directory_not_leaked(self):
+        """
+        Ensure the source directory is not included in the tar header
+        per bpo-41316.
+        """
+        tarfile.open(tmpname, self.mode).close()
+        payload = pathlib.Path(tmpname).read_text(encoding='latin-1')
+        assert os.path.dirname(tmpname) not in payload
+
 
 class Bz2StreamWriteTest(Bz2Test, StreamWriteTest):
     decompressor = bz2.BZ2Decompressor if bz2 else None
@@ -2305,7 +2324,8 @@ class CommandLineTest(unittest.TestCase):
     def test_test_command_verbose(self):
         for tar_name in testtarnames:
             for opt in '-v', '--verbose':
-                out = self.tarfilecmd(opt, '-t', tar_name)
+                out = self.tarfilecmd(opt, '-t', tar_name,
+                                      PYTHONIOENCODING='utf-8')
                 self.assertIn(b'is a tar archive.\n', out)
 
     def test_test_command_invalid_file(self):
@@ -2376,7 +2396,8 @@ class CommandLineTest(unittest.TestCase):
                                   'and-utf8-bom-sig-only.txt')]
         for opt in '-v', '--verbose':
             try:
-                out = self.tarfilecmd(opt, '-c', tmpname, *files)
+                out = self.tarfilecmd(opt, '-c', tmpname, *files,
+                                      PYTHONIOENCODING='utf-8')
                 self.assertIn(b' file created.', out)
                 with tarfile.open(tmpname) as tar:
                     tar.getmembers()
@@ -2434,7 +2455,8 @@ class CommandLineTest(unittest.TestCase):
         for opt in '-v', '--verbose':
             try:
                 with support.temp_cwd(tarextdir):
-                    out = self.tarfilecmd(opt, '-e', tmpname)
+                    out = self.tarfilecmd(opt, '-e', tmpname,
+                                          PYTHONIOENCODING='utf-8')
                 self.assertIn(b' file is extracted.', out)
             finally:
                 support.rmtree(tarextdir)

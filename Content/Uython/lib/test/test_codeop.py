@@ -4,6 +4,7 @@
 """
 import sys
 import unittest
+import warnings
 from test import support
 
 from codeop import compile_command, PyCF_DONT_IMPLY_DEDENT
@@ -302,6 +303,20 @@ class CodeopTests(unittest.TestCase):
                          compile("a = 1\n", "abc", 'single').co_filename)
         self.assertNotEqual(compile_command("a = 1\n", "abc").co_filename,
                             compile("a = 1\n", "def", 'single').co_filename)
+
+    def test_warning(self):
+        # Test that the warning is only returned once.
+        with support.check_warnings(
+                (".*literal", SyntaxWarning),
+                (".*invalid", DeprecationWarning),
+                ) as w:
+            compile_command(r"'\e' is 0")
+            self.assertEqual(len(w.warnings), 2)
+
+        # bpo-41520: check SyntaxWarning treated as an SyntaxError
+        with warnings.catch_warnings(), self.assertRaises(SyntaxError):
+            warnings.simplefilter('error', SyntaxWarning)
+            compile_command('1 is 1', symbol='exec')
 
 
 if __name__ == "__main__":

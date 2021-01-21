@@ -5201,6 +5201,7 @@ class CWhitebox(unittest.TestCase):
         DefaultContext = C.DefaultContext
 
         InvalidOperation = C.InvalidOperation
+        FloatOperation = C.FloatOperation
         DivisionByZero = C.DivisionByZero
         Overflow = C.Overflow
         Subnormal = C.Subnormal
@@ -5274,6 +5275,7 @@ class CWhitebox(unittest.TestCase):
           Underflow: C.DecUnderflow,
           Overflow: C.DecOverflow,
           DivisionByZero: C.DecDivisionByZero,
+          FloatOperation: C.DecFloatOperation,
           InvalidOperation: C.DecIEEEInvalidOperation
         }
         IntCond = [
@@ -5476,6 +5478,9 @@ class CWhitebox(unittest.TestCase):
             self.assertEqual(Decimal.from_float(cls(101.1)),
                              Decimal.from_float(101.1))
 
+    # Issue 41540:
+    @unittest.skipIf(sys.platform.startswith("aix"),
+                     "AIX: default ulimit: test is flaky because of extreme over-allocation")
     def test_maxcontext_exact_arith(self):
 
         # Make sure that exact operations do not raise MemoryError due

@@ -24,10 +24,9 @@ import textwrap
 from io import StringIO
 from collections import namedtuple
 from test.support.script_helper import assert_python_ok
-from test.support import threading_helper
 from test.support import (
     TESTFN, rmtree,
-    reap_children, captured_output, captured_stdout,
+    reap_children, reap_threads, captured_output, captured_stdout,
     captured_stderr, unlink, requires_docstrings
 )
 from test import pydoc_mod
@@ -1576,7 +1575,7 @@ class TestInternalUtilities(unittest.TestCase):
                 self.assertIsNone(self._get_revised_path(trailing_argv0dir))
 
 
-@threading_helper.reap_threads
+@reap_threads
 def test_main():
     try:
         test.support.run_unittest(PydocDocTest,

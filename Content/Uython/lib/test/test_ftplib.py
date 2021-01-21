@@ -19,7 +19,6 @@ except ImportError:
 
 from unittest import TestCase, skipUnless
 from test import support
-from test.support import threading_helper
 from test.support import socket_helper
 from test.support.socket_helper import HOST, HOSTv6
 
@@ -1118,11 +1117,11 @@ def test_main():
              TestTLS_FTPClassMixin, TestTLS_FTPClass,
              MiscTestCase]
 
-    thread_info = threading_helper.threading_setup()
+    thread_info = support.threading_setup()
     try:
         support.run_unittest(*tests)
     finally:
-        threading_helper.threading_cleanup(*thread_info)
+        support.threading_cleanup(*thread_info)
 
 
 if __name__ == '__main__':
